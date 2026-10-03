@@ -1,9 +1,7 @@
 import { readFile } from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const require = createRequire(import.meta.url);
 const root = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(root, "..");
 const worker = (await import("../dist/server/index.js")).default;
