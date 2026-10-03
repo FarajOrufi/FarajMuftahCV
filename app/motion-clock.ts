@@ -1,6 +1,7 @@
-import { clamp01, sceneTravel } from "./scene-motion";
+import { sceneTravelAt } from "./scene-motion";
+import { darkTransition } from "./dark-transition";
 
-export type MotionFrame = { scroll: number; width: number; height: number; time: number; dt: number; reduced: boolean; travel: number; velocity: number };
+export type MotionFrame = { scroll: number; width: number; height: number; time: number; dt: number; reduced: boolean; travel: number; velocity: number; dark: ReturnType<typeof darkTransition> };
 const listeners = new Set<(frame: MotionFrame) => void>();
 let stop: (() => void) | undefined;
 
@@ -14,11 +15,15 @@ export function subscribeMotion(listener: (frame: MotionFrame) => void) {
 function start() {
   const preference = matchMedia("(prefers-reduced-motion: reduce)");
   let raf = 0, previous = 0, time = 0, scroll = window.scrollY, previousTravel = 0;
-  let layout: { top: number; span: number }[] = [];
+  let layout: { top: number; span: number; approach: number }[] = [];
+  let darkIndex = -1;
   const measure = () => {
-    layout = [...document.querySelectorAll<HTMLElement>(".zoom-scene")].map(section => ({
+    const sections = [...document.querySelectorAll<HTMLElement>(".zoom-scene")];
+    darkIndex = sections.findIndex(section => section.classList.contains("dark-tunnel-scene"));
+    layout = sections.map(section => ({
       top: section.getBoundingClientRect().top + window.scrollY,
       span: Math.max(1, section.offsetHeight - innerHeight),
+      approach: Number(section.dataset.approach ?? 0) * innerHeight,
     }));
     schedule();
   };
@@ -32,8 +37,9 @@ function start() {
     let index = 0;
     for (let i = 0; i < layout.length; i++) if (scroll >= layout[i].top) index = i;
     const active = layout[index];
-    const travel = active ? index + sceneTravel(clamp01((scroll - active.top) / active.span)) : 0;
-    const state = { scroll, width: innerWidth, height: innerHeight, time, dt, reduced: preference.matches, travel, velocity: (travel - previousTravel) / dt };
+    const travel = active ? index + sceneTravelAt(scroll - active.top, active.span, active.approach) : 0;
+    const state = { scroll, width: innerWidth, height: innerHeight, time, dt, reduced: preference.matches, travel, velocity: (travel - previousTravel) / dt,
+      dark: darkTransition(travel, darkIndex, preference.matches || innerHeight <= 600) };
     previousTravel = travel;
     listeners.forEach(callback => callback(state));
     if (!preference.matches && !document.hidden) schedule();

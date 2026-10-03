@@ -13,3 +13,12 @@ export const sceneTravel = (progress: number) => {
   return 0.31 + smoothstep((p - 0.66) / 0.34) * 0.69;
 };
 
+/** Stretch only the final camera approach, leaving the reading beat unchanged. */
+export const sceneTravelAt = (distance: number, span: number, approach = 0) => {
+  if (approach <= 0) return sceneTravel(distance / span);
+  const readingSpan = Math.max(1, span - approach);
+  const approachStart = readingSpan * .66;
+  if (distance <= approachStart) return sceneTravel(distance / readingSpan);
+  return .31 + smoothstep((distance - approachStart) / Math.max(1, span - approachStart)) * .69;
+};
+

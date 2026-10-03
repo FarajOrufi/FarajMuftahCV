@@ -69,6 +69,7 @@ export function createTunnelAudio(report: (state: AudioTelemetry) => void, inter
     ensureAirLayer();
     const speed = frame.reduced ? 0 : Math.min(3, Math.abs(frame.velocity));
     const intensity = Math.min(1, speed / 1.35), scene = Math.floor(frame.travel + .001), isMoving = speed > .008;
+    target(master.gain, .65 * (1 - frame.dark.blackout * .7), .08);
     target(airFilter!.frequency, 260 + intensity * 1850, .08);
     target(airGain!.gain, intensity * .095, .055);
     if (activeScene >= 0 && scene !== activeScene && Math.abs(delta) < .4) subDrop();

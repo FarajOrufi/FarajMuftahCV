@@ -132,6 +132,18 @@ export function createTunnel(canvas: HTMLCanvasElement) {
     scene.add(mesh); rings.push({ mesh, distance, material });
   }
 
+  // Black centre belongs to one of the real tube rings. Its perspective and
+  // occlusion come from the same camera as the stars and circuit lines.
+  const portal = new THREE.Mesh(
+    new THREE.CircleGeometry(RADIUS * .972, 160),
+    new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, toneMapped: false,
+      transparent: true, depthTest: false, depthWrite: false }),
+  );
+  portal.renderOrder = 2;
+  portal.visible = false;
+  scene.add(portal);
+  let portalIndex = -1;
+
   const composer = new EffectComposer(renderer);
   const renderPass = new RenderPass(scene, camera);
   const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .55, .5, .22);
@@ -176,6 +188,17 @@ export function createTunnel(canvas: HTMLCanvasElement) {
     const targetFov = frame.reduced ? 60 : 60 + Math.min(14, Math.abs(frame.velocity) * 5);
     currentFov = frame.reduced ? 60 : currentFov + (targetFov - currentFov) * smoothing;
     camera.fov = currentFov; camera.updateProjectionMatrix();
+    if (frame.dark.index !== portalIndex && frame.dark.index >= 0) {
+      portalIndex = frame.dark.index;
+      const portalT = (8 + portalIndex * STEP) / length;
+      const portalFrame = Math.round(portalT * SAMPLES);
+      portal.position.copy(path.getPointAt(portalT));
+      portal.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+        frames.normals[portalFrame], frames.binormals[portalFrame], frames.tangents[portalFrame],
+      ));
+      for (const ring of rings) ring.mesh.renderOrder = ring.distance === 8 + portalIndex * STEP ? 3 : 0;
+    }
+    portal.visible = frame.dark.approaching;
     uniforms.uTime.value = frame.reduced ? 0 : frame.time;
     uniforms.uPixelScale.value = height * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(currentFov / 2)));
     for (const ring of rings) {

@@ -1,45 +1,39 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
-import { clamp01, smoothstep } from "./scene-motion";
+import { useEffect, useRef } from "react";
 import { subscribeMotion } from "./motion-clock";
 
-const rings = Array.from({ length: 7 }, (_, index) => index);
-
 export default function DarkTunnel() {
-  const root = useRef<HTMLElement>(null);
-  const stage = useRef<HTMLDivElement>(null);
+  const veil = useRef<HTMLDivElement>(null);
+  const fallback = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const section = root.current;
-    const tunnel = stage.current;
-    if (!section || !tunnel) return;
+    const overlay = veil.current;
+    const disk = fallback.current;
+    if (!overlay || !disk) return;
     return subscribeMotion(frame => {
-      if (frame.reduced || frame.height <= 600) {
-        tunnel.style.setProperty("--tunnel-progress", "0");
-        tunnel.style.setProperty("--tunnel-black", "0");
-        return;
-      }
-      const top = section.offsetTop - frame.scroll;
-      const progress = clamp01(-top / Math.max(1, section.offsetHeight - frame.height));
-      const enter = smoothstep(progress / .22);
-      const exit = smoothstep((progress - .72) / .28);
-      const black = enter * (1 - exit);
-      tunnel.style.setProperty("--tunnel-progress", progress.toFixed(4));
-      tunnel.style.setProperty("--tunnel-black", black.toFixed(4));
-      tunnel.style.setProperty("--tunnel-portal", (0.22 + progress * 5.2).toFixed(4));
-      tunnel.style.setProperty("--tunnel-light", (exit * .8).toFixed(4));
+      const { cover, exit, approaching, index } = frame.dark;
+      const visible = cover > 0 && exit < 1;
+      overlay.style.visibility = visible ? "visible" : "hidden";
+      overlay.style.opacity = String(cover);
+      // Opening a circular aperture reveals the existing tube, without a panel.
+      const radius = Math.hypot(frame.width, frame.height) * .51 * exit;
+      overlay.style.maskImage = exit > 0
+        ? `radial-gradient(circle at 50% 50%, transparent ${radius}px, #000 ${radius + 1}px)`
+        : "none";
+      overlay.dataset.cover = cover.toFixed(4);
+      overlay.dataset.exit = exit.toFixed(4);
+      overlay.dataset.travel = frame.travel.toFixed(4);
+      const gap = Math.max(.1, (index - frame.travel) * 30);
+      const size = frame.height * 5 / (Math.tan(Math.PI / 6) * gap);
+      disk.style.visibility = approaching ? "visible" : "hidden";
+      disk.style.transform = `translate(-50%, -50%) scale(${size})`;
     });
   }, []);
 
-  return <section ref={root} className="zoom-scene dark-tunnel-scene" aria-label="Dark transition tunnel">
-    <div ref={stage} className="zoom-stage dark-tunnel-stage">
-      <div className="tunnel-portal" aria-hidden="true">
-        {rings.map(index => <span key={index} style={{ "--ring": index } as CSSProperties} />)}
-        <i />
-      </div>
-      <div className="tunnel-veil" aria-hidden="true" />
-      <div className="tunnel-exit-light" aria-hidden="true" />
-    </div>
-  </section>;
+  return <>
+    <section id="dark-crossing" className="zoom-scene dark-tunnel-scene" aria-hidden="true" />
+    <div ref={fallback} className="dark-portal-fallback" aria-hidden="true" />
+    <div ref={veil} className="dark-tunnel-veil" aria-hidden="true" />
+  </>;
 }

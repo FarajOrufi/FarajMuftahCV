@@ -5,6 +5,7 @@ import SignalField from "./signal-field";
 import ZoomScene from "./zoom-scene";
 import SoundControl from "./sound-control";
 import DarkTunnel from "./dark-tunnel";
+import FutureNote from "./future-note";
 
 type Language = "en" | "ar";
 
@@ -53,6 +54,16 @@ const copy = {
     email: "Start a conversation",
     resume: "Download résumé",
     closing: "Curiosity shaped the path. Responsibility gave it direction.",
+    outlook: {
+      label: "A LOOK AHEAD",
+      title: "Understanding grows.",
+      emphasis: "Value comes into view.",
+      paragraphs: [
+        "Today’s unease about artificial intelligence reminds me of the early days of the internet. In the nineties, it felt unfamiliar and unsettling; then it became a natural part of everyday life.",
+        "I believe our relationship with AI will evolve too. The better we understand it, the more thoughtfully we can use it — and the more clearly we can see the value it can bring.",
+      ],
+      action: "Let’s talk about the next idea",
+    },
   },
   ar: {
     nav: ["القصة", "الخبرة", "المشاريع", "تواصل"],
@@ -91,6 +102,16 @@ const copy = {
     email: "ابدأ محادثة",
     resume: "تحميل السيرة الذاتية",
     closing: "ما بدأ كفضول تجاه الأعطال، أصبح طريقة في بناء حلول يفهمها الناس ويثقون بها.",
+    outlook: {
+      label: "نظرة إلى القادم",
+      title: "يزداد الفهم.",
+      emphasis: "وتظهر القيمة.",
+      paragraphs: [
+        "الخوف من الذكاء الاصطناعي اليوم يذكّرني بالخوف من الإنترنت في بداياته. في التسعينات، بدا الإنترنت غامضًا ومثيرًا للقلق، ثم أصبح جزءًا طبيعيًا من حياتنا.",
+        "أرى أن علاقتنا بالذكاء الاصطناعي ستتغير أيضًا؛ كلما فهمناه أكثر، أصبحنا أقدر على استخدامه بوعي، ورؤية القيمة التي يمكن أن يضيفها.",
+      ],
+      action: "لنتحدث عن الفكرة القادمة",
+    },
   },
 } as const;
 
@@ -150,7 +171,7 @@ export default function Home() {
           {content.milestones.map((item, index) => (
             <Fragment key={`milestone-group-${item.year}`}>
               {item.year === "2024" ? <DarkTunnel /> : null}
-              <ZoomScene id={`year-${item.year}`} label={item.title} key={item.year} signals={milestoneSignals[item.year]}>
+              <ZoomScene id={`year-${item.year}`} label={item.title} key={item.year} signals={milestoneSignals[item.year]} approach={item.year === "2013" ? .5 : 0}>
                 <article className="milestone" style={{ "--step": index } as CSSProperties}>
                   <span>{item.year}</span>
                   <div><h3>{item.title}</h3><p>{item.text}</p></div>
@@ -185,7 +206,7 @@ export default function Home() {
       </ZoomScene>
 
       <ZoomScene id="contact" label={content.contactChapter} last>
-      <footer className="contact-section" dir={isArabic ? "rtl" : "ltr"}>
+      <div className="contact-section" dir={isArabic ? "rtl" : "ltr"}>
         <p className="section-number">{content.contactChapter}</p>
         <h2>{content.contactTitle}</h2>
         <p className="contact-text">{content.contactText}</p>
@@ -194,9 +215,12 @@ export default function Home() {
           <a href="/Faraj-Alorfi-Resume.pdf" download>{content.resume}</a>
         </div>
         <p className="closing-line">{content.closing}</p>
-        <div className="footer-base"><span>© {new Date().getFullYear()} Faraj Alorfi</span><span>Benghazi · Libya</span></div>
-      </footer>
+      </div>
       </ZoomScene>
+
+      <FutureNote content={content.outlook} arabic={isArabic}>
+        <footer className="footer-base"><span>© {new Date().getFullYear()} Faraj Alorfi</span><span>Benghazi · Libya</span></footer>
+      </FutureNote>
     </main>
   );
 }

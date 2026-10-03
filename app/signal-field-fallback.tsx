@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { clamp01, sceneTravel } from "./scene-motion";
+import { clamp01, sceneTravelAt } from "./scene-motion";
 
 type Particle = { angle: number; radius: number; z: number; size: number; pale: boolean };
 type Circuit = { angle: number; bendA: number; bendB: number; weight: number; phase: number; bright: boolean };
@@ -103,8 +103,8 @@ export default function SignalFieldFallback() {
           return currentDistance < closestDistance ? index : closest;
         }, 0);
       const rect = sections[activeIndex].getBoundingClientRect();
-      const progress = clamp01(-rect.top / Math.max(1, rect.height - height));
-      return activeIndex + sceneTravel(progress);
+      const section = sections[activeIndex];
+      return activeIndex + sceneTravelAt(-rect.top, Math.max(1, rect.height - height), Number(section.dataset.approach ?? 0) * height);
     };
 
     const updateTarget = () => {
