@@ -1,0 +1,6 @@
+{
+  "framework": null,
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist/client",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api?path=$1" }]
+}
