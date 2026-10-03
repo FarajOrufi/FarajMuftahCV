@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type CSSProperties } from "react";
 import SignalField from "./signal-field";
 import ZoomScene from "./zoom-scene";
 import SoundControl from "./sound-control";
+import DarkTunnel from "./dark-tunnel";
 
 type Language = "en" | "ar";
 
@@ -147,12 +148,15 @@ export default function Home() {
         </div>
       </ZoomScene>
           {content.milestones.map((item, index) => (
-            <ZoomScene id={`year-${item.year}`} label={item.title} key={item.year} signals={milestoneSignals[item.year]}>
-            <article className="milestone" style={{ "--step": index } as React.CSSProperties}>
-              <span>{item.year}</span>
-              <div><h3>{item.title}</h3><p>{item.text}</p></div>
-            </article>
-            </ZoomScene>
+            <Fragment key={`milestone-group-${item.year}`}>
+              {item.year === "2024" ? <DarkTunnel /> : null}
+              <ZoomScene id={`year-${item.year}`} label={item.title} key={item.year} signals={milestoneSignals[item.year]}>
+                <article className="milestone" style={{ "--step": index } as CSSProperties}>
+                  <span>{item.year}</span>
+                  <div><h3>{item.title}</h3><p>{item.text}</p></div>
+                </article>
+              </ZoomScene>
+            </Fragment>
           ))}
 
       <ZoomScene id="connections" label={content.portraitChapter}>
