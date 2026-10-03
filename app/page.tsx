@@ -17,7 +17,7 @@ const milestoneSignals: Record<string, readonly string[]> = {
 const copy = {
   en: {
     nav: ["Story", "Experience", "Projects", "Contact"],
-    name: "FARAJ ALORFI",
+    name: "FARAJ MUFTAH",
     line: "Signals. Systems. Intelligence.",
     roles: "Remote IT Support · Communications · AI-Assisted Development",
     chapter: "02 / THE HUMAN SIGNAL",
