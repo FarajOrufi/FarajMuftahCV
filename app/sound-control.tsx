@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createTunnelAudio, type AudioTelemetry } from "./tunnel-audio";
+
+const subscribeReady = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 export default function SoundControl({ arabic }: { arabic: boolean }) {
   const [state, setState] = useState<"off" | "loading" | "on" | "error">("off");
+  const ready = useSyncExternalStore(subscribeReady, clientReady, serverReady);
   const engine = useRef<ReturnType<typeof createTunnelAudio> | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const alive = useRef(true);
@@ -21,7 +26,9 @@ export default function SoundControl({ arabic }: { arabic: boolean }) {
     if (state === "on") { engine.current?.disable(); setState("off"); return; }
     busy.current = true; setState("loading");
     try {
-      engine.current ??= createTunnelAudio(report, () => { if (alive.current) setState("error"); });
+      engine.current ??= createTunnelAudio(report, () => { if (alive.current) setState("error"); }, value => {
+        if (button.current) button.current.dataset.audioMotion = JSON.stringify(value);
+      });
       await engine.current.enable();
       if (alive.current) setState("on");
     } catch {
@@ -37,7 +44,7 @@ export default function SoundControl({ arabic }: { arabic: boolean }) {
     : state === "on" ? "Sound on" : state === "loading" ? "Loading" : state === "error" ? "Retry sound" : "Sound off";
   return <div className="sound-control" dir={arabic ? "rtl" : "ltr"}>
     <button ref={button} className="sound-toggle" type="button" aria-label={label} aria-pressed={state === "on"}
-      aria-busy={state === "loading"} disabled={state === "loading"} onClick={toggle} title={label}>
+      aria-busy={state === "loading"} disabled={!ready || state === "loading"} onClick={toggle} title={label}>
       <svg className="sound-wave" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 14v4m5-10v16m6-20v24m6-18v12m5-8v4" /></svg>
       <span>{text}</span>
     </button>

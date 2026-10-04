@@ -1,7 +1,8 @@
-import { sceneTravelAt } from "./scene-motion";
+import { cameraTravel, projectedCameraTravel, type CameraScene } from "./camera-travel";
 import { darkTransition } from "./dark-transition";
 
-export type MotionFrame = { scroll: number; width: number; height: number; time: number; dt: number; reduced: boolean; travel: number; velocity: number; dark: ReturnType<typeof darkTransition> };
+export type MotionFrame = { scroll: number; width: number; height: number; time: number; dt: number; reduced: boolean; travel: number; velocity: number; dark: ReturnType<typeof darkTransition>;
+  project?: (seconds: number) => Pick<MotionFrame, "travel" | "dark"> };
 const listeners = new Set<(frame: MotionFrame) => void>();
 let stop: (() => void) | undefined;
 
@@ -15,7 +16,7 @@ export function subscribeMotion(listener: (frame: MotionFrame) => void) {
 function start() {
   const preference = matchMedia("(prefers-reduced-motion: reduce)");
   let raf = 0, previous = 0, time = 0, scroll = window.scrollY, previousTravel = 0;
-  let layout: { top: number; span: number; approach: number }[] = [];
+  let layout: CameraScene[] = [];
   let darkIndex = -1;
   const measure = () => {
     const sections = [...document.querySelectorAll<HTMLElement>(".zoom-scene")];
@@ -32,14 +33,18 @@ function start() {
     const dt = previous ? Math.min((now - previous) / 1000, .05) : 1 / 60;
     previous = now;
     if (!preference.matches) time += dt;
-    scroll += (window.scrollY - scroll) * (preference.matches ? 1 : 1 - Math.exp(-14 * dt));
-    if (Math.abs(scroll - window.scrollY) < .02) scroll = window.scrollY;
-    let index = 0;
-    for (let i = 0; i < layout.length; i++) if (scroll >= layout[i].top) index = i;
-    const active = layout[index];
-    const travel = active ? index + sceneTravelAt(scroll - active.top, active.span, active.approach) : 0;
+    const targetScroll = window.scrollY;
+    scroll += (targetScroll - scroll) * (preference.matches ? 1 : 1 - Math.exp(-14 * dt));
+    if (Math.abs(scroll - targetScroll) < .02) scroll = targetScroll;
+    const travel = cameraTravel(scroll, layout);
+    const cameraScroll = scroll, scenes = layout, portal = darkIndex;
+    const reduced = preference.matches, portalReduced = reduced || innerHeight <= 600;
     const state = { scroll, width: innerWidth, height: innerHeight, time, dt, reduced: preference.matches, travel, velocity: (travel - previousTravel) / dt,
-      dark: darkTransition(travel, darkIndex, preference.matches || innerHeight <= 600) };
+      dark: darkTransition(travel, darkIndex, portalReduced),
+      project: (seconds: number) => {
+        const nextTravel = reduced ? travel : projectedCameraTravel(cameraScroll, targetScroll, Math.min(.08, Math.max(0, seconds)), scenes);
+        return { travel: nextTravel, dark: darkTransition(nextTravel, portal, portalReduced) };
+      } };
     previousTravel = travel;
     listeners.forEach(callback => callback(state));
     if (!preference.matches && !document.hidden) schedule();
