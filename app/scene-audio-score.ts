@@ -60,7 +60,9 @@ export function ringCueTracker() {
     update(travel: number, moving: boolean) {
       const before = previous; previous = travel;
       for (const ring of locked) if (before !== undefined && Math.abs(before - ring) > .09) locked.delete(ring);
-      if (!moving || before === undefined || before === travel || Math.abs(travel - before) > .45) return null;
+      // A fast but healthy frame can move more than .45 projected units. Keep
+      // the nearest crossing, but never replay several skipped planes on a jump.
+      if (!moving || before === undefined || before === travel || Math.abs(travel - before) > 1.25) return null;
       const direction = Math.sign(travel - before);
       const ring = direction > 0 ? Math.floor(travel) : Math.ceil(travel);
       const crossed = direction > 0 ? before < ring && travel >= ring : before > ring && travel <= ring;

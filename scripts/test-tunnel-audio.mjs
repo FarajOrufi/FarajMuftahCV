@@ -14,7 +14,7 @@ const { motionSound, resonanceChannels } = load("tunnel-audio-motion");
 const { audioEnvelope, audioOutputDelay } = load("audio-envelope");
 const scoreModule = load("scene-audio-score");
 const { sceneAudioScore, ringCueTracker } = scoreModule;
-const layerModule = load("scene-audio-layers", {}, { "./audio-envelope": { audioEnvelope } });
+const layerModule = load("sample-scene-layers", {}, { "./audio-envelope": { audioEnvelope } });
 const profiles = Array.from({ length: 11 }, (_, i) => sceneAudioScore(i + .3, .7, i === 6 ? 1 : 0));
 assert.equal(new Set(profiles.map(p => [p.texture, p.root, p.signal, p.cutoff].join())).size, 11, "Every scene has a distinct spatial mix");
 assert.equal(profiles[6].scene, "dark-crossing");
@@ -36,6 +36,8 @@ assert.equal(cueTracker.update(7.2, true), null, "Skipped rings never queue up")
 cueTracker.reset(7.8);
 assert.equal(cueTracker.update(8.01, false), null, "Idle/reflow cannot emit a cue");
 const sceneMotion = load("scene-motion");
+cueTracker.reset(6.45);
+assert.equal(cueTracker.update(7.08, true).ring, 7, "Fast projected travel does not lose the 2024 crossing");
 const { cameraTravel, projectedCameraTravel } = load("camera-travel", {}, { "./scene-motion": sceneMotion });
 const params = [], calls = [];
 const fakeParam = {
@@ -151,22 +153,22 @@ const { createTunnelAudio } = load("tunnel-audio", {
   process: { env: { NODE_ENV: "development" } },
   document: doc, setTimeout, clearTimeout, AbortController,
   fetch: async (url, options) => {
-    assert.equal(url, "/audio/dark-oscillator-motion-v1.wav", "Only the selected local derivative is fetched");
+    assert.ok(["/audio/scene-travel-v1.wav", ...layerModule.SCENE_AUDIO_ASSETS].includes(url), "Only approved local derivatives are fetched");
     assert.ok(options.signal, "Loading is abortable on teardown"); fetchCount++;
     return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
   },
 }, { "./tunnel-audio-motion": { motionSound }, "./audio-envelope": { audioEnvelope, audioOutputDelay },
-  "./scene-audio-score": scoreModule, "./scene-audio-layers": layerModule,
+  "./scene-audio-score": scoreModule, "./sample-scene-layers": layerModule,
   "./motion-clock": { subscribeMotion: callback => { listener = callback; return () => { listener = undefined; }; } } });
 assert.equal(context, undefined, "Import/SSR does not instantiate Web Audio");
 const engine = createTunnelAudio(value => { telemetry = value; }, () => assert.fail("Unexpected interruption"));
 assert.equal(sources.length, 0, "No autoplay on construction");
 await engine.enable();
 assert.equal(sources.length, 0, "Enable is not ambient playback");
-assert.equal(telemetry.source, "mixkit-dark-synth-oscillator-646");
-assert.equal(telemetry.revision, "spatial-scene-score-v3");
+assert.equal(telemetry.source, "pixabay-spatial-four-layer-v1");
+assert.equal(telemetry.revision, "licensed-scene-motion-v5");
 assert.ok(telemetry.loopSeconds > 1.8 && telemetry.loopSeconds < 1.9);
-assert.equal(fetchCount, 1);
+assert.equal(fetchCount, 4);
 const step = (velocity, travel, dt = .02, reduced = false) => {
   context.currentTime += dt;
   for (const source of sources) if (source.stopAt <= context.currentTime && !source.finished) { source.finished = true; source.ended?.(); }
@@ -180,14 +182,14 @@ assert.equal(sources.length, 3, "Texture, depth and signal start on first moving
 assert.equal(sources[0].loop, true);
 assert.equal(sources[0].startArgs[0], context.currentTime, "First moving frame uses the audio clock immediately");
 for (let i = 0; i < 250; i++) step(.5, 3.01 + i * .01);
-assert.equal(textures().length, 1, "No texture restart during sustained travel across rings");
+assert.equal(textures().length, 3, "No layer restart during sustained travel across rings");
 assert.ok(telemetry.cueCount >= 2, "Crossings produce real finite cues, not diagnostics alone");
 assert.ok(telemetry.qa.maxVoices <= 5, "Two tonal voices, texture, one cue plus bounded cancellation fade");
 for (let i = 0; i < 3; i++) step(0, 5.5);
 step(.5, 5.51);
-assert.equal(textures().length, 1, "Wheel gaps do not retrigger the sample");
+assert.equal(textures().length, 3, "Wheel gaps do not retrigger the sample");
 for (let i = 0; i < 12; i++) step(i % 2 ? -.6 : .6, 5.5);
-assert.equal(textures().length, 1, "Reversal changes pitch without restarting the waveform");
+assert.equal(textures().length, 3, "Reversal changes spatial envelope without restarting layers");
 assert.ok(telemetry.voices <= 5, "Bounded layers, including rapid reversal");
 for (let i = 0; i < 30; i++) step(0, 5.5);
 assert.equal(telemetry.gain, 0);
@@ -230,8 +232,8 @@ const countMuted = sources.length;
 step(.8, 5.8);
 assert.equal(sources.length, countMuted, "No playback while muted");
 await engine.enable();
-assert.equal(fetchCount, 1, "Mute/unmute reuses decoded audio, without fetching or decoding again");
-assert.equal(decodeCount, 1);
+assert.equal(fetchCount, 4, "Mute/unmute reuses all decoded layers");
+assert.equal(decodeCount, 4);
 step(0, 5.8);
 step(.8, 5.81);
 assert.equal(telemetry.enabled, true);
@@ -253,7 +255,7 @@ const failureFactory = fetcher => load("tunnel-audio", {
   process: { env: { NODE_ENV: "development" } }, document: doc,
   setTimeout, clearTimeout, AbortController, fetch: fetcher,
 }, { "./tunnel-audio-motion": { motionSound }, "./audio-envelope": { audioEnvelope, audioOutputDelay },
-  "./scene-audio-score": scoreModule, "./scene-audio-layers": layerModule,
+  "./scene-audio-score": scoreModule, "./sample-scene-layers": layerModule,
   "./motion-clock": { subscribeMotion: callback => { listener = callback; return () => { listener = undefined; }; } },
 }).createTunnelAudio;
 const missing = failureFactory(async () => ({ ok: false, status: 404 }))(() => {}, () => {});
@@ -286,3 +288,19 @@ for (const loop of loops) {
   assert.ok(Math.abs(seam - (before + after) / 2) < .002, "Prepared source has no seam discontinuity");
 }
 console.log("PASS: 11 distinct continuous scene mixes, dark-to-2024 contrast, bidirectional rearmed crossing cues, no skipped-cue backlog, bounded five-voice graph, exact camera projection, latency fallback, soft stop/reversal/stall safety, prepared loop seam, no autoplay, idle/reflow/reduced-motion/visibility/mute cleanup, cache reuse, failure/abort and idempotent teardown.");
+
+for (const name of ["travel", "approach", "dark", "cross"]) {
+  const asset = readFileSync(new URL(`../public/audio/scene-${name}-${name === "cross" ? "v2" : "v1"}.wav`, import.meta.url));
+  assert.equal(asset.readUInt32LE(24), 48000);
+  let energy = 0, peak = 0;
+  for (let i = 44; i < asset.length; i += 2) {
+    const value = asset.readInt16LE(i) / 32768; peak = Math.max(peak, Math.abs(value)); energy += value * value;
+  }
+  assert.ok(energy > 0 && peak <= .621, `${name} has real bounded sample energy`);
+  if (name === "cross") assert.equal((asset.length - 44) / (48000 * 4), .12, "Crossing is only a 120 ms knock, without sustain");
+  if (name !== "cross") for (let c = 0; c < 2; c++) {
+    const seam = (asset.readInt16LE(44 + c * 2) - asset.readInt16LE(asset.length - 4 + c * 2)) / 32768;
+    assert.ok(Math.abs(seam) < .006, `${name} loop seam bounded`);
+  }
+}
+console.log("PASS: all four selected PCM layers have actual energy, headroom and crossfaded loop seams.");
