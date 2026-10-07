@@ -74,7 +74,7 @@ const copy = {
     headline: "لم تبدأ التقنية عندي من الشاشة، بل من محاولة فهم ما يحدث خلفها.",
     statement: "في كل نظام هناك قصة لا تظهر من النظرة الأولى. بدأت من فضول صغير تجاه البرمجة وأعطال الأجهزة، ثم تحوّل الفضول إلى خبرة عملية في الدعم، والشبكات، والاتصالات، وبناء الحلول الرقمية. ومع الوقت، صار كل عطل نافذة لفهم أعمق، وكل فكرة فرصة لبناء تجربة أوضح.",
     journey: "2007 — من هنا بدأ الفضول العملي",
-    language: "Enter English",
+    language: "انجليزي",
     scroll: "ابدأ الرحلة",
     pathChapter: "03 / النظرة البعيدة",
     pathTitle: "مسار لا يتحرك في خط مستقيم، بل يتوسع مع كل تجربة.",
@@ -211,8 +211,8 @@ export default function Home() {
         <h2>{content.contactTitle}</h2>
         <p className="contact-text">{content.contactText}</p>
         <div className="contact-actions">
-          <a href="mailto:Farajalorfi09@gmail.com">{content.email}</a>
-          <a href="/Faraj-Alorfi-Resume.pdf" download>{content.resume}</a>
+          <a href="https://linktr.ee/farajmuftah" target="_blank" rel="noreferrer">{content.email}</a>
+          <a href="/Faraj Muftah CV.pdf" download>{content.resume}</a>
         </div>
         <p className="closing-line">{content.closing}</p>
       </div>
