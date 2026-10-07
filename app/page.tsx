@@ -26,7 +26,7 @@ const copy = {
     headline: "TECHNOLOGY WAS ALWAYS ABOUT PEOPLE.",
     statement: "I’m drawn to the moment when complexity becomes clear — when a problem becomes a system, and a system becomes something people can trust.",
     journey: "2007 — WHERE CURIOSITY BEGAN",
-    language: "Enter Arabic",
+    language: "Arabic",
     scroll: "Continue into the light",
     pathChapter: "03 / THE LONG VIEW",
     pathTitle: "A path built on responsibility, then expanded by curiosity.",
@@ -98,7 +98,7 @@ const copy = {
     ],
     contactChapter: "06 / أفق مفتوح",
     contactTitle: "لنبنِ حلًا واضحًا يعمل بثقة.",
-    contactText: "إذا كانت لديك فكرة تحتاج إلى شكل، أو مشكلة تحتاج إلى ترتيب، أو تجربة رقمية تحتاج أن تصبح أوضح؛ فالبداية دائمًا من فهم جيد لما يحدث.",
+    contactText: "إذا كانت لديك فكرة لم تأخذ شكلها بعد، أو مشكلة تحتاج إلى ترتيب، فالبداية دائمًا تكون من فهم واضح لما يحدث، ثم تحويله إلى حل يعمل بثقة.",
     email: "ابدأ محادثة",
     resume: "تحميل السيرة الذاتية",
     closing: "ما بدأ كفضول تجاه الأعطال، أصبح طريقة في بناء حلول يفهمها الناس ويثقون بها.",
@@ -196,7 +196,7 @@ export default function Home() {
         </div>
         <div className="project-ledges">
           {content.projects.map((project, index) => (
-            <a key={project.name} href={project.href} target="_blank" rel="noreferrer" className="project-ledge">
+            <a key={project.name} href={project.href} className="project-ledge">
               <span className="project-index">0{index + 1}</span>
               <div><p>{project.label}</p><h3>{project.name}</h3></div>
               <span className="project-visit">{content.visit}</span>
